@@ -1,0 +1,36 @@
+version: "3.3"
+networks:
+  traefik-public:
+    external: true
+
+services:
+  traefik:
+    image: "traefik:v2.1"
+    restart: unless-stopped
+    command:
+      - "--log.level=INFO"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--accesslog=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myhttpchallenge.acme.httpchallenge=true"
+      - "--certificatesresolvers.myhttpchallenge.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myhttpchallenge.acme.email=${OWNER_EMAIL}"
+      - "--certificatesresolvers.myhttpchallenge.acme.storage=/letsencrypt/acme.json"
+      # The below is for hass server as it needs network=host
+      - "--providers.file=true"
+      - "--providers.file.filename=/etc/traefik/rules.toml"
+      - "--providers.docker=true"
+      - "--providers.file.watch=true"
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+    volumes:
+      - "${VOLUME_ROOT}/traefik/letsencrypt:/letsencrypt"
+      - "${VOLUME_ROOT}/traefik/rules.toml:/etc/traefik/rules.toml"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - traefik-public
